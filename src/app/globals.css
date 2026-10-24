@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+@theme {
+  /* Optimentals orange (samma skala som optimental.vercel.app) */
+  --color-brand-50: #fff4ed;
+  --color-brand-100: #ffe8db;
+  --color-brand-200: #ffceb7;
+  --color-brand-300: #ffb493;
+  --color-brand-400: #ff9b6f;
+  --color-brand-500: #ff8c42;
+  --color-brand-600: #ff6b0a;
+  --color-brand-700: #d65400;
+  --color-brand-800: #a34100;
+  --color-brand-900: #702e00;
+
+  /* Bläck och papper */
+  --color-ink: #1a1614;
+  --color-ink-soft: #4a423d;
+  --color-ink-muted: #6f655e;
+  --color-paper: #fffaf4;
+  --color-sand: #f6eee3;
+  --color-line: #e8dccd;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+
+  --radius-bubble: 1.75rem;
+
+  --animate-fade-up: fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-blob: blob 14s ease-in-out infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes blob {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(30px, -40px) scale(1.08);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.94);
+    }
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: 6rem;
+  }
+
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+  }
+
+  ::selection {
+    @apply bg-brand-200 text-ink;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-600;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight text-balance;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility highlight {
+  background-image: linear-gradient(
+    transparent 58%,
+    var(--color-brand-300) 58%,
+    var(--color-brand-300) 92%,
+    transparent 92%
+  );
+  background-repeat: no-repeat;
+  padding-inline: 0.08em;
+  box-decoration-break: clone;
+}
+
+/* Pratbubblan från loggan – svans nere till höger. */
+@utility bubble {
+  position: relative;
+  border-radius: var(--radius-bubble);
+  &::after {
+    content: "";
+    position: absolute;
+    right: 2.25rem;
+    bottom: -0.7rem;
+    width: 1.4rem;
+    height: 1.4rem;
+    background: inherit;
+    border-right: inherit;
+    border-bottom: inherit;
+    transform: skewX(-28deg) rotate(42deg);
+    border-bottom-right-radius: 0.35rem;
+  }
+}
+
+@utility paper-grain {
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--color-ink) 5%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+}
+
+@layer components {
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 9999px;
+    background: var(--color-ink);
+    border: 4px solid white;
+    box-shadow: 0 2px 8px rgb(26 22 20 / 0.3);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 9999px;
+    background: var(--color-ink);
+    border: 4px solid white;
+    box-shadow: 0 2px 8px rgb(26 22 20 / 0.3);
+  }
+}
