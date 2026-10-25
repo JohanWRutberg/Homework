@@ -52,17 +52,21 @@ src/
 
 ## AI-hjälpen
 
-- Aktiveras bara om `ANTHROPIC_API_KEY` är satt **vid bygget**. Byggs appen om utan nyckel döljs AI-delen och resten fungerar som vanligt.
+- **Testläge utan kostnad:** i `npm run dev` utan nyckel körs AI-hjälpen i testläge med förskrivna svar som bygger på mallens egna texter. Skriv `#kris` eller `#fel` i en fråga för att prova kris- och felflödet. `AI_MODEL=mock` aktiverar testläget även i ett produktionsbygge.
+- **Riktiga modeller:** sätt `ANTHROPIC_API_KEY` och välj modell med `AI_MODEL` (`claude-haiku-5-5`, `claude-sonnet-5-5` eller `claude-opus-5-5`; standard är Sonnet 5.5). Ett felstavat modellnamn stoppar bygget med ett tydligt fel.
+- **Jämföra modeller:** i `npm run dev`, eller med `AI_MODEL_SWITCHER=1` i en preview-miljö, finns en modellväljare i chatten, och varje svar märks med vilken modell som svarade. Servern godtar bara modeller från väljaren, så en klient kan aldrig välja en dyrare modell i skarp drift.
+- **Kostnadsuppföljning:** varje anrop loggar modell och antal tokens in och ut, aldrig innehåll.
+- Inställningarna läses **vid bygget** för de statiska sidorna. Bygg om (Vercel: _Redeploy_) när du ändrar dem.
 - ”Vad menas här?” visar först behandlarens egen förklaring, utan AI. AI:n används bara när patienten själv ställer en fråga.
 - **Patientens ifyllda svar skickas aldrig.** Systemprompten byggs enbart av mallens text. Det enda som går till Anthropic är patientens fråga, plus vilken mall och vilket fält det gäller.
 - Kristriage sker i två steg. En ordlistescreening körs i webbläsaren och på servern innan något skickas, och modellen är dessutom instruerad att svara `[KRIS]`. I båda fallen visas 112, Mind Självmordslinjen 90101 och 1177 i stället för ett svar.
-- Skydd: zod-validering, max 600 tecken per fråga och max 10 meddelanden, same-origin-kontroll, rate limit (20 frågor per 10 min och klient), `max_tokens`-tak och server-side fallback vid nekat svar. Innehåll loggas aldrig, bara feltyp och statuskod.
-- Modell: `claude-opus-5-5` med `effort: "low"`, vilket ger snabba och korta svar.
+- Skydd: zod-validering, max 600 tecken per fråga och max 10 meddelanden, same-origin-kontroll, rate limit (20 frågor per 10 min och klient) och `max_tokens`-tak. Sonnet och Opus har dessutom server-side fallback vid nekat svar; Haiku 5.5 saknar det stödet. Innehåll loggas aldrig.
+- Alla modeller körs med `effort: "low"`, vilket ger snabba och korta svar.
 
 ## Driftsättning (Vercel)
 
 1. Importera repot i Vercel. Region: välj **Stockholm (arn1)** eller Frankfurt (fra1) under _Settings → Functions_.
-2. Miljövariabler: `ANTHROPIC_API_KEY` (valfri) och `NEXT_PUBLIC_SITE_URL` (den publika adressen).
+2. Miljövariabler: `ANTHROPIC_API_KEY` (valfri), `AI_MODEL` (valfri, se ovan) och `NEXT_PUBLIC_SITE_URL` (den publika adressen). Sätt `AI_MODEL_SWITCHER=1` bara för _Preview_-miljön.
 3. **Rekommenderat:** lägg en rate limit-regel i _Vercel Firewall_ för `/api/hjalp`, till exempel 30 anrop per minut och IP. Rate limiten i koden gäller per serverinstans.
 4. Sätt en månadsbudget och en larmgräns i Anthropic Console.
 

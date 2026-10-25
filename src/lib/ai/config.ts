@@ -1,8 +1,12 @@
 import "server-only";
+import { resolveAiConfig, type AiClientConfig } from "./models";
 
-export const AI_MODEL = "claude-opus-5-5";
-
-/** AI-hjälpen visas bara när en API-nyckel är konfigurerad. */
-export function isAiEnabled(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+/** Läser miljövariablerna. null betyder att AI-hjälpen är avstängd och döljs. */
+export function getAiConfig(): AiClientConfig | null {
+  return resolveAiConfig({
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    AI_MODEL: process.env.AI_MODEL,
+    AI_MODEL_SWITCHER: process.env.AI_MODEL_SWITCHER,
+    NODE_ENV: process.env.NODE_ENV,
+  });
 }

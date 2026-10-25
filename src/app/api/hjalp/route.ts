@@ -1,9 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL, isAiEnabled } from "@/lib/ai/config";
+import { getAiConfig } from "@/lib/ai/config";
 import { CRISIS_MARKER, containsCrisisSignal } from "@/lib/ai/crisis";
+import { mockReply, streamWords } from "@/lib/ai/mock";
+import { hasServerFallback, pickModel, type LiveModelId } from "@/lib/ai/models";
 import { buildSystemPrompt } from "@/lib/ai/prompt";
 import { rateLimit } from "@/lib/ai/rate-limit";
-import { helpRequestSchema } from "@/lib/ai/schema";
+import { helpRequestSchema, type ChatMessage } from "@/lib/ai/schema";
 import { getTemplate } from "@/lib/templates";
 
 export const maxDuration = 60;
@@ -16,6 +18,12 @@ const REFUSAL_TEXT =
   "\n\nJag kan tyvärr inte svara på det här. Fråga gärna din behandlare vid nästa tillfälle.";
 const ERROR_TEXT =
   "\n\nNågot gick fel och svaret blev inte klart. Försök igen om en stund – eller läs förklaringen ovanför fältet.";
+
+const STREAM_HEADERS = {
+  "Content-Type": "text/plain; charset=utf-8",
+  "Cache-Control": "no-store",
+  "X-Content-Type-Options": "nosniff",
+};
 
 let client: Anthropic | null = null;
 function getClient(): Anthropic {
@@ -32,12 +40,13 @@ function clientKey(request: Request): string {
   return forwarded || request.headers.get("x-real-ip") || "okänd";
 }
 
-function textStream(text: string) {
-  return new Response(text, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+function textResponse(text: string) {
+  return new Response(text, { headers: STREAM_HEADERS });
 }
 
 export async function POST(request: Request) {
-  if (!isAiEnabled()) return jsonError(503, "AI-hjälpen är inte aktiverad.");
+  const config = getAiConfig();
+  if (!config) return jsonError(503, "AI-hjälpen är inte aktiverad.");
 
   const origin = request.headers.get("origin");
   if (origin && new URL(origin).host !== request.headers.get("host")) {
@@ -53,9 +62,7 @@ export async function POST(request: Request) {
       return jsonError(
         429,
         "Du har ställt många frågor på kort tid. Vänta en stund och försök igen.",
-        {
-          "Retry-After": String(limited.retryAfterSeconds),
-        }
+        { "Retry-After": String(limited.retryAfterSeconds) }
       );
     }
   }
@@ -81,24 +88,46 @@ export async function POST(request: Request) {
 
   // Krisscreening före AI-anropet – inget skickas vidare om det finns tecken på kris.
   if (messages.some((m) => m.role === "user" && containsCrisisSignal(m.content))) {
-    return textStream(CRISIS_MARKER);
+    return textResponse(CRISIS_MARKER);
   }
 
+  const model = pickModel(config, parsed.data.model);
+
+  if (model === "mock") {
+    let reply: string;
+    try {
+      reply = mockReply(template, section, field, messages);
+    } catch {
+      reply = ERROR_TEXT.trim();
+    }
+    return new Response(streamWords(reply, request.signal), { headers: STREAM_HEADERS });
+  }
+
+  return liveResponse(request, model, buildSystemPrompt(template, section, field), messages);
+}
+
+function liveResponse(
+  request: Request,
+  model: LiveModelId,
+  system: string,
+  messages: ChatMessage[]
+) {
   const stream = getClient().beta.messages.stream(
     {
-      model: AI_MODEL,
+      model,
       max_tokens: 4096,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
       output_config: { effort: "low" },
-      system: buildSystemPrompt(template, section, field),
+      ...(hasServerFallback(model)
+        ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const }
+        : {}),
+      system,
       messages,
     },
     { signal: request.signal }
   );
 
   const encoder = new TextEncoder();
-  const body$ = new ReadableStream<Uint8Array>({
+  const body = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
         for await (const event of stream) {
@@ -108,11 +137,17 @@ export async function POST(request: Request) {
         }
         const final = await stream.finalMessage();
         if (final.stop_reason === "refusal") controller.enqueue(encoder.encode(REFUSAL_TEXT));
+        // Endast metadata – för att kunna följa kostnaden per modell. Aldrig innehåll.
+        console.info("AI-hjälp", {
+          model: final.model,
+          input_tokens: final.usage.input_tokens,
+          output_tokens: final.usage.output_tokens,
+        });
       } catch (error) {
         // Logga aldrig innehåll – bara feltyp och status.
         if (!request.signal.aborted) {
           const status = error instanceof Anthropic.APIError ? error.status : undefined;
-          console.error("AI-hjälp misslyckades", { type: (error as Error)?.name, status });
+          console.error("AI-hjälp misslyckades", { model, type: (error as Error)?.name, status });
           controller.enqueue(encoder.encode(ERROR_TEXT));
         }
       } finally {
@@ -128,11 +163,5 @@ export async function POST(request: Request) {
     },
   });
 
-  return new Response(body$, {
-    headers: {
-      "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "no-store",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
+  return new Response(body, { headers: STREAM_HEADERS });
 }

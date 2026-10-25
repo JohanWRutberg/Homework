@@ -3,6 +3,7 @@
 import { Eye, FileDown, LoaderCircle, PenLine, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import type { AiClientConfig } from "@/lib/ai/models";
 import { downloadHomeworkPdf } from "@/lib/pdf/download";
 import { emptyValues, hasAnyValue } from "@/lib/templates";
 import type { FormValues, HomeworkTemplate, Section } from "@/lib/templates/types";
@@ -14,10 +15,10 @@ type View = "fyll-i" | "exempel";
 
 export function HomeworkForm({
   template,
-  aiEnabled,
+  ai,
 }: {
   template: HomeworkTemplate;
-  aiEnabled: boolean;
+  ai: AiClientConfig | null;
 }) {
   const [view, setView] = useState<View>("fyll-i");
   const [values, setValues] = useState<FormValues>(() => emptyValues(template));
@@ -176,7 +177,7 @@ export function HomeworkForm({
                           onChange={(v) => update(section.id, index, field.id, v)}
                           templateSlug={template.slug}
                           sectionId={section.id}
-                          aiEnabled={aiEnabled}
+                          ai={ai}
                         />
                       ))}
                     </div>

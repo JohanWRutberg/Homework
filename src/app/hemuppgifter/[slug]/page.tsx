@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import { HomeworkForm } from "@/components/homework/HomeworkForm";
 import { TemplateIcon } from "@/components/homework/TemplateIcon";
 import { Skeleton } from "@/components/ui/skeleton";
-import { isAiEnabled } from "@/lib/ai/config";
+import { getAiConfig } from "@/lib/ai/config";
 import { getTemplate, templates } from "@/lib/templates";
 
 type Params = PageProps<"/hemuppgifter/[slug]">["params"];
@@ -82,7 +82,7 @@ async function TemplateHero({ params }: { params: Params }) {
 
 async function TemplateForm({ params }: { params: Params }) {
   const template = await resolveTemplate(params);
-  return <HomeworkForm template={template} aiEnabled={isAiEnabled()} />;
+  return <HomeworkForm template={template} ai={getAiConfig()} />;
 }
 
 function HeroSkeleton() {

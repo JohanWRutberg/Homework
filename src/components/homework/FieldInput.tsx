@@ -2,6 +2,7 @@
 
 import { ChevronDown, MessageCircleQuestion } from "lucide-react";
 import { useState } from "react";
+import type { AiClientConfig } from "@/lib/ai/models";
 import type { Field, ScaleField } from "@/lib/templates/types";
 import { cn } from "@/lib/utils";
 import { AiChat } from "./AiChat";
@@ -13,7 +14,7 @@ interface Props {
   onChange: (value: string) => void;
   templateSlug: string;
   sectionId: string;
-  aiEnabled: boolean;
+  ai: AiClientConfig | null;
 }
 
 const inputClass =
@@ -26,7 +27,7 @@ export function FieldInput({
   onChange,
   templateSlug,
   sectionId,
-  aiEnabled,
+  ai,
 }: Props) {
   const [helpOpen, setHelpOpen] = useState(false);
   const helpId = `${inputId}-hjalp`;
@@ -62,8 +63,14 @@ export function FieldInput({
           className="bubble mt-3 mb-5 animate-fade-up border border-brand-200 bg-brand-50 p-5"
         >
           <p className="leading-relaxed text-ink">{field.help}</p>
-          {aiEnabled && (
-            <AiChat templateSlug={templateSlug} sectionId={sectionId} fieldId={field.id} />
+          {ai && (
+            <AiChat
+              inputId={inputId}
+              templateSlug={templateSlug}
+              sectionId={sectionId}
+              fieldId={field.id}
+              ai={ai}
+            />
           )}
         </div>
       )}

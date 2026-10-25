@@ -10,6 +10,8 @@ export const helpRequestSchema = z.object({
   templateSlug: z.string().min(1).max(64),
   sectionId: z.string().min(1).max(64),
   fieldId: z.string().min(1).max(64),
+  /** Gäller bara i jämförelseläget – servern ignorerar modeller som inte är tillåtna. */
+  model: z.string().max(40).optional(),
   messages: z
     .array(
       z.object({
