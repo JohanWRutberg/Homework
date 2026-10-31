@@ -52,6 +52,7 @@ src/
 
 ## AI-hjälpen
 
+- **Av eller på:** `AI_ENABLED=false` stänger av AI-hjälpen helt, även om nyckeln finns kvar. Då döljs chatten, `/api/hjalp` svarar 503, och start- och integritetssidan beskriver bara förklaringarna och exemplen. `AI_ENABLED=true` slår på den och stoppar bygget om nyckel saknas, så att sidan aldrig utlovar en AI som inte finns. Tomt värde betyder på om nyckel finns. Byt i Vercel under _Settings → Environment Variables_ och gör sedan _Redeploy_.
 - **Testläge utan kostnad:** i `npm run dev` utan nyckel körs AI-hjälpen i testläge med förskrivna svar som bygger på mallens egna texter. Skriv `#kris` eller `#fel` i en fråga för att prova kris- och felflödet. `AI_MODEL=mock` aktiverar testläget även i ett produktionsbygge.
 - **Riktiga modeller:** sätt `ANTHROPIC_API_KEY` och välj modell med `AI_MODEL` (`claude-haiku-5-5`, `claude-sonnet-5-5` eller `claude-opus-5-5`; standard är Sonnet 5.5). Ett felstavat modellnamn stoppar bygget med ett tydligt fel.
 - **Jämföra modeller:** i `npm run dev`, eller med `AI_MODEL_SWITCHER=1` i en preview-miljö, finns en modellväljare i chatten, och varje svar märks med vilken modell som svarade. Servern godtar bara modeller från väljaren, så en klient kan aldrig välja en dyrare modell i skarp drift.
@@ -66,7 +67,7 @@ src/
 ## Driftsättning (Vercel)
 
 1. Importera repot i Vercel. Region: välj **Stockholm (arn1)** eller Frankfurt (fra1) under _Settings → Functions_.
-2. Miljövariabler: `ANTHROPIC_API_KEY` (valfri), `AI_MODEL` (valfri, se ovan) och `NEXT_PUBLIC_SITE_URL` (den publika adressen). Sätt `AI_MODEL_SWITCHER=1` bara för _Preview_-miljön.
+2. Miljövariabler: `AI_ENABLED` (`true`/`false`), `ANTHROPIC_API_KEY` (valfri), `AI_MODEL` (valfri, se ovan) och `NEXT_PUBLIC_SITE_URL` (den publika adressen). Sätt `AI_MODEL_SWITCHER=1` bara för _Preview_-miljön.
 3. **Rekommenderat:** lägg en rate limit-regel i _Vercel Firewall_ för `/api/hjalp`, till exempel 30 anrop per minut och IP. Rate limiten i koden gäller per serverinstans.
 4. Sätt en månadsbudget och en larmgräns i Anthropic Console.
 

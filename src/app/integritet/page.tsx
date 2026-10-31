@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { getAiConfig } from "@/lib/ai/config";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
     "Hur Optimental Hemuppgifter hanterar det du skriver – kort sagt: vi sparar ingenting.",
 };
 
-const sections = [
+const sections = (aiEnabled: boolean) => [
   {
     title: "Vi sparar ingenting",
     body: [
@@ -23,19 +24,28 @@ const sections = [
       "Du behöver inte logga in och vi vet inte vem du är. Sidan använder inga kakor (cookies), ingen analys och inga annonsverktyg.",
     ],
   },
-  {
-    title: "AI-hjälpen",
-    body: [
-      "När du trycker på ”Vad menas här?” visas först en förklaring som din behandlare har skrivit – helt utan AI.",
-      "Om du väljer att ställa en fråga till AI-hjälpen skickas din fråga, tillsammans med vilken hemuppgift och vilket fält det gäller, till AI-tjänsten Claude från Anthropic för att ett svar ska kunna skapas. Det du har fyllt i i formuläret skickas aldrig med.",
-      "Skriv därför inte ditt namn eller andra personuppgifter i frågan. Vi sparar inte frågorna eller svaren, och Anthropic använder inte innehåll från sitt API för att träna sina modeller.",
-      "AI-hjälpen kan förklara och ställa följdfrågor, men den fyller inte i åt dig, ställer inga diagnoser och ersätter inte din behandlare. Svaren kan innehålla fel.",
-    ],
-  },
+  aiEnabled
+    ? {
+        title: "AI-hjälpen",
+        body: [
+          "När du trycker på ”Vad menas här?” visas först en förklaring som din behandlare har skrivit – helt utan AI.",
+          "Om du väljer att ställa en fråga till AI-hjälpen skickas din fråga, tillsammans med vilken hemuppgift och vilket fält det gäller, till AI-tjänsten Claude från Anthropic för att ett svar ska kunna skapas. Det du har fyllt i i formuläret skickas aldrig med.",
+          "Skriv därför inte ditt namn eller andra personuppgifter i frågan. Vi sparar inte frågorna eller svaren, och Anthropic använder inte innehåll från sitt API för att träna sina modeller.",
+          "AI-hjälpen kan förklara och ställa följdfrågor, men den fyller inte i åt dig, ställer inga diagnoser och ersätter inte din behandlare. Svaren kan innehålla fel.",
+        ],
+      }
+    : {
+        title: "Hjälpen i formulären",
+        body: [
+          "När du trycker på ”Vad menas här?” visas en förklaring som din behandlare har skrivit. Varje hemuppgift har också ett ifyllt exempel. Ingenting av det du skriver skickas iväg.",
+        ],
+      },
   {
     title: "Om du mår dåligt",
     body: [
-      "Om du skriver något som tyder på att du har tankar på att skada dig själv slutar AI-hjälpen svara och visar istället var du kan få hjälp direkt: 112 vid akut fara, Mind Självmordslinjen 90101 och 1177 Vårdguiden.",
+      aiEnabled
+        ? "Om du skriver något som tyder på att du har tankar på att skada dig själv slutar AI-hjälpen svara och visar istället var du kan få hjälp direkt: 112 vid akut fara, Mind Självmordslinjen 90101 och 1177 Vårdguiden."
+        : "Om du har tankar på att skada dig själv – vänta inte till nästa besök. Ring 112 vid akut fara, Mind Självmordslinjen 90101 eller 1177 Vårdguiden.",
     ],
   },
   {
@@ -47,6 +57,7 @@ const sections = [
 ];
 
 export default function PrivacyPage() {
+  const aiEnabled = getAiConfig() !== null;
   return (
     <>
       <PageHeader
@@ -61,7 +72,7 @@ export default function PrivacyPage() {
         inte behöver – och inte kan – spara det du skriver.
       </PageHeader>
       <article className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
-        {sections.map((s) => (
+        {sections(aiEnabled).map((s) => (
           <section key={s.title} className="border-b border-line py-8 first:pt-0 last:border-0">
             <h2 className="text-2xl font-semibold">{s.title}</h2>
             <div className="mt-3 space-y-3 leading-relaxed text-ink-soft">

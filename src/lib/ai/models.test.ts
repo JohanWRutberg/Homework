@@ -44,6 +44,29 @@ describe("resolveAiConfig", () => {
     );
   });
 
+  it("stängs av med AI_ENABLED=false även när nyckel finns", () => {
+    expect(
+      resolveAiConfig({ NODE_ENV: "production", ANTHROPIC_API_KEY: "x", AI_ENABLED: "false" })
+    ).toBeNull();
+    expect(resolveAiConfig({ NODE_ENV: "development", AI_ENABLED: "false" })).toBeNull();
+  });
+
+  it("stoppar bygget om AI_ENABLED=true inte går att uppfylla", () => {
+    expect(() => resolveAiConfig({ NODE_ENV: "production", AI_ENABLED: "true" })).toThrow(
+      /kräver ANTHROPIC_API_KEY/
+    );
+    expect(
+      resolveAiConfig({ NODE_ENV: "production", ANTHROPIC_API_KEY: "x", AI_ENABLED: "TRUE" })!
+        .defaultModel
+    ).toBe("claude-sonnet-5-5");
+  });
+
+  it("stoppar felstavade AI_ENABLED direkt", () => {
+    expect(() => resolveAiConfig({ ANTHROPIC_API_KEY: "x", AI_ENABLED: "nej" })).toThrow(
+      /Okänt AI_ENABLED/
+    );
+  });
+
   it("stoppar felstavade modellnamn direkt", () => {
     expect(() => resolveAiConfig({ ANTHROPIC_API_KEY: "x", AI_MODEL: "claude-haiku" })).toThrow(
       /Okänt AI_MODEL/

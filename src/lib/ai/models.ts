@@ -23,6 +23,7 @@ export interface AiClientConfig {
 }
 
 export interface AiEnv {
+  AI_ENABLED?: string;
   ANTHROPIC_API_KEY?: string;
   AI_MODEL?: string;
   AI_MODEL_SWITCHER?: string;
@@ -45,12 +46,20 @@ export function hasServerFallback(id: LiveModelId): boolean {
 
 /**
  * Avgör om och hur AI-hjälpen är aktiv:
+ * - AI_ENABLED=false → avstängd, oavsett övriga inställningar
+ * - AI_ENABLED=true → måste gå att slå på, annars stoppas bygget
  * - AI_MODEL=mock → testläge utan nyckel och utan kostnad
  * - API-nyckel finns → AI_MODEL, annars Sonnet 5.5
  * - utvecklingsläge utan nyckel → testläge automatiskt
  * - AI_MODEL_SWITCHER=1 (alltid i utveckling) → modellväljare för jämförelser
  */
 export function resolveAiConfig(env: AiEnv): AiClientConfig | null {
+  const enabled = env.AI_ENABLED?.trim().toLowerCase() || undefined;
+  if (enabled && enabled !== "true" && enabled !== "false") {
+    throw new Error(`Okänt AI_ENABLED "${env.AI_ENABLED}". Giltiga värden: true, false`);
+  }
+  if (enabled === "false") return null;
+
   const hasKey = Boolean(env.ANTHROPIC_API_KEY);
   const isDev = env.NODE_ENV === "development";
   const raw = env.AI_MODEL?.trim() || undefined;
@@ -65,7 +74,9 @@ export function resolveAiConfig(env: AiEnv): AiClientConfig | null {
   if (requested === MOCK_MODEL.id) defaultModel = MOCK_MODEL.id;
   else if (hasKey) defaultModel = requested ?? DEFAULT_LIVE_MODEL;
   else if (isDev) defaultModel = MOCK_MODEL.id;
-  else return null;
+  else if (enabled === "true") {
+    throw new Error("AI_ENABLED=true kräver ANTHROPIC_API_KEY (eller AI_MODEL=mock).");
+  } else return null;
 
   const switcher = env.AI_MODEL_SWITCHER === "1" || isDev;
   const options: ModelOption[] = switcher

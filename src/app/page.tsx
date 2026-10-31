@@ -12,10 +12,11 @@ import Link from "next/link";
 import { TemplateCard } from "@/components/homework/TemplateCard";
 import { buttonVariants } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import { getAiConfig } from "@/lib/ai/config";
 import { templates } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 
-const steps = [
+const steps = (aiEnabled: boolean) => [
   {
     icon: ClipboardList,
     title: "Öppna din hemuppgift",
@@ -24,7 +25,9 @@ const steps = [
   {
     icon: MessageCircleQuestion,
     title: "Fyll i – med hjälp på vägen",
-    text: "Tryck på ”Vad menas här?” vid varje fråga. Se ett ifyllt exempel. Fråga AI-hjälpen om något är oklart.",
+    text: aiEnabled
+      ? "Tryck på ”Vad menas här?” vid varje fråga. Se ett ifyllt exempel. Fråga AI-hjälpen om något är oklart."
+      : "Tryck på ”Vad menas här?” vid varje fråga och se ett ifyllt exempel när något är oklart.",
   },
   {
     icon: FileDown,
@@ -34,6 +37,7 @@ const steps = [
 ];
 
 export default function HomePage() {
+  const aiEnabled = getAiConfig() !== null;
   return (
     <>
       <Hero />
@@ -69,7 +73,7 @@ export default function HomePage() {
           </h2>
         </div>
         <ol className="mt-12 grid gap-6 md:grid-cols-3">
-          {steps.map((step, i) => (
+          {steps(aiEnabled).map((step, i) => (
             <li
               key={step.title}
               className="relative rounded-3xl border border-line bg-white/60 p-7"
@@ -117,7 +121,9 @@ export default function HomePage() {
               },
               {
                 icon: MessageCircleQuestion,
-                text: "AI-hjälpen får bara din fråga – aldrig det du fyllt i",
+                text: aiEnabled
+                  ? "AI-hjälpen får bara din fråga – aldrig det du fyllt i"
+                  : "Förklaringarna är skrivna av behandlare – inget skickas iväg",
               },
             ].map((item) => (
               <li
